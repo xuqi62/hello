@@ -6,7 +6,7 @@
 4. 并把库和可执行文件推到手机，执行
    adb shell stop
 adb shell setprop libc.debug.malloc.options backtrace
-adb shell setprop libc.debug.malloc.program st_soft_isp_nn_test
+adb shell setprop libc.debug.malloc.program test
 adb shell export LIBC_DEBUG_MALLOC_OPTIONS=backtrace
 adb shell export LIBC_DEBUG_MALLOC_ENABLE=1
 adb shell start
