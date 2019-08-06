@@ -1,5 +1,5 @@
 1. libc_malloc_debug.so是android bionic的debug库，库或可执行文件链接该so就可以测试内存泄露或内存越界
-2. 在程序退出时，使用debug_dump_heap 保存堆栈信息。
+2. 在程序退出时，使用debug_dump_heap 保存堆栈信息，用于最后生成内存报告
 3. 编译并把库和可执行文件推到手机
  使用ndk编译需要 -g 参数，否则在生成report时无法定位函数位置
 
