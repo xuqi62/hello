@@ -1,4 +1,4 @@
-CC := aarch64-linux-android-gcc
+CC := aarch64-linux-android-g++
 
 SRC := test.cpp
 OBJ := test.o
