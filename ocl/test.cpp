@@ -20,10 +20,20 @@ static int64_t get_now_us()
 const char hello_kernel[] = 
     "__kernel void helloworld(__global float *pIn1, __global float *pIn2, __global float *pOut)\n"
     "{      \n"
-    "   int id = get_global_id(0); \n"
-    "   float tmp = exp(pIn2[id]); \n"
-    "   pOut[id] = tmp / (exp(pIn1[id]) + tmp); \n"
+    "   int i = get_global_id(0); \n"
+    "   float4 layer1 = vload4(i, pIn1); \n"
+    "   float4 layer2 = vload4(i, pIn2); \n"
+    "   float4 tmp = exp(layer2); \n"
+    "   vstore4(tmp/(exp(layer1) + tmp), i, pOut); \n"
     "}              \n";
+
+// const char hello_kernel[] = 
+//     "__kernel void helloworld(__global float *pIn1, __global float *pIn2, __global float *pOut)\n"
+//     "{      \n"
+//     "   int i = get_global_id(0); \n"
+//     "   float tmp = exp(pIn2[i]); \n"
+//     "   pOut[i] = tmp / (exp(pIn1[i]) + tmp); \n"
+//     "}              \n";
  
 int main(int argc, char* argv[])
 {
@@ -86,6 +96,16 @@ int main(int argc, char* argv[])
 		printf("Error: Can not create command queue \n");
 		return 0;
 	}
+
+    /*
+     * Query the device to find out it's prefered integer vector width.
+     * Although we are only printing the value here, it can be used to select between
+     * different versions of a kernel.
+     */
+    cl_uint integerVectorWidth;
+    clGetDeviceInfo(devices, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &integerVectorWidth, NULL);
+    printf("Prefered vector width for integers: %d \n", integerVectorWidth);
+
  
 	// ----------------------5. 创建程序对象------------------------------
 	pSource = hello_kernel;			// 获得strSource指针
@@ -137,7 +157,7 @@ int main(int argc, char* argv[])
 	mem_output = clCreateBuffer(
 		Context,
 		CL_MEM_WRITE_ONLY,					// 输出内存只能写
-		data_size * sizeof(char),	// 输出内存空间大小
+		data_size * sizeof(float),	// 输出内存空间大小
 		NULL,
 		NULL);
  
@@ -169,7 +189,7 @@ int main(int argc, char* argv[])
     clEnqueueWriteBuffer(CommandQueue, mem_input2, CL_TRUE, 0,
         data_size * sizeof(float), in_layer1, 0, NULL, NULL);
 	// --------------------------10.运行内核---------------------------------
-	uiGlobal_Work_Size[0] = uiStrlength;  // 输入字符串大小
+	uiGlobal_Work_Size[0] = data_size / 4; 
  
     int64_t start = get_now_us();
 	// 利用命令队列使将再设备上执行的内核排队
@@ -190,6 +210,12 @@ int main(int argc, char* argv[])
 		cout << "Error: Can not run kernel" << endl;
 		return 0;
 	}
+
+    status = clFinish(CommandQueue);
+    if(status)
+    {
+        printf("clfinish failed \n");
+    }
  
 	// ----------------------------11. 将输出读取到主机内存
 
@@ -198,7 +224,7 @@ int main(int argc, char* argv[])
 		mem_output,	// 输出内存对象
 		CL_TRUE,			// 内核读取结束之前该函数不会返回
 		0,
-		uiStrlength * sizeof(char),
+		data_size * sizeof(float),
 		out,
 		0,
 		NULL,
@@ -206,13 +232,21 @@ int main(int argc, char* argv[])
  
 	if (CL_SUCCESS != status)
 	{
-		cout << "Error: Can not reading result buffer" << endl;
+		printf("Error: Can not reading result buffer, %d\n", status);
 		return 0;
 	}
     int64_t end = get_now_us();
 
     printf("ocl time: %lld \n", end-start);
 
+    for(int i=0; i<data_size; i++)
+    {
+        if(out[i] != 0.5)
+        {
+            printf(" error, out[%d], %f", i, out[i]);
+            return -1;
+        }
+    }
     
  
 	// ---------------------12--输出计算结果---------------
