@@ -45,10 +45,10 @@ bool isValid(vector<string> &cur, int row, int col)
     return true;
 }
 
-void DFS(vector<string> vec, int col, vector<vector<string> >& ret)
+void DFS(vector<string> vec, int row, vector<vector<string> >& ret)
 {
     int n = vec.size();
-    if(col == n)
+    if(row == n)
     {
         ret.push_back(vec);
         return;
@@ -56,12 +56,11 @@ void DFS(vector<string> vec, int col, vector<vector<string> >& ret)
 
     for(int i=0; i<n; i++)
     {
-
-        if(isValid(vec, col, i) == true)
+        if(isValid(vec, row, i) == true)
         {
-            vec[col][i] = 'Q';
-            DFS(vec, col+1, ret);
-            vec[col][i] = '.';
+            vec[row][i] = 'Q';
+            DFS(vec, row+1, ret);
+            vec[row][i] = '.';
         }
     }
 }
